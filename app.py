@@ -11,7 +11,7 @@ playstore = pd.read_csv('data/googleplaystore.csv')
 
 playstore.drop_duplicates(keep='first', subset = 'App', inplace=True) 
 
-# bagian ini untuk menghapus row 10472 karena nilai data tersebut tidak tersimpan pada kolom yang benar
+# Delete row 10472 since the value isn't placed in the correct column
 playstore.drop([10472], inplace=True)
 
 playstore.Category = playstore.Category.astype('category')
@@ -19,7 +19,7 @@ playstore.Category = playstore.Category.astype('category')
 playstore.Installs = playstore.Installs.apply(lambda x: x.replace(',',''))
 playstore.Installs = playstore.Installs.apply(lambda x: x.replace('+',''))
 
-# Bagian ini untuk merapikan kolom Size, Anda tidak perlu mengubah apapun di bagian ini
+# Clean up column Size
 playstore['Size'].replace('Varies with device', np.nan, inplace = True ) 
 playstore.Size = (playstore.Size.replace(r'[kM]+$', '', regex=True).astype(float) * \
              playstore.Size.str.extract(r'[\d\.]+([kM]+)', expand=False)
@@ -30,7 +30,7 @@ playstore['Size'].fillna(playstore.groupby('Category')['Size'].transform('mean')
 playstore.Price = playstore.Price.apply(lambda x: x.replace('$',''))
 playstore.Price = playstore.Price.astype('float')
 
-# Ubah tipe data Reviews, Size, Installs ke dalam tipe data integer
+# Change data type of column Reviews, Size, and Installs
 playstore[['Reviews', 'Size', 'Installs']] = playstore[['Reviews', 'Size', 'Installs']].astype('int')
 
 @app.route("/")
@@ -38,13 +38,13 @@ playstore[['Reviews', 'Size', 'Installs']] = playstore[['Reviews', 'Size', 'Inst
 def index():
     df2 = playstore.copy()
 
-    # Statistik
+    # Statistic
     top_category = top_category = pd.crosstab (
         index = df2['Category'],
         columns = 'frequency'
     ).sort_values('frequency', ascending=False).reset_index()
 
-    # Dictionary stats digunakan untuk menyimpan beberapa data yang digunakan untuk menampilkan nilai di value box dan tabel
+    # Dictionary stats are used to show up value box and table
     stats = {
         'most_categories' : top_category['Category'].head(1).to_list()[0],
         'total': sum(top_category['frequency'].head(1)),
@@ -58,21 +58,16 @@ def index():
     X = cat_order['Category']
     Y = cat_order['App']
     my_colors = ['r','g','b','k','y','m','c']
-    # bagian ini digunakan untuk membuat kanvas/figure
     fig = plt.figure(figsize=(8,3),dpi=300)
     fig.add_subplot()
-    # bagian ini digunakan untuk membuat bar plot
     plt.barh(X, Y, color=my_colors)
-    # bagian ini digunakan untuk menyimpan plot dalam format image.png
     plt.savefig('cat_order.png',bbox_inches="tight") 
 
-    # bagian ini digunakan untuk mengconvert matplotlib png ke base64 agar dapat ditampilkan ke template html
+    # convert png to base64 
     figfile = BytesIO()
     plt.savefig(figfile, format='png')
     figfile.seek(0)
     figdata_png = base64.b64encode(figfile.getvalue())
-    # variabel result akan dimasukkan ke dalam parameter di fungsi render_template() agar dapat ditampilkan di 
-    # halaman html
     result = str(figdata_png)[2:-1]
     
     ## Scatter Plot
@@ -81,7 +76,6 @@ def index():
     area = playstore['Installs'].values/10000000 # ukuran besar/kecilnya lingkaran scatter plot
     fig = plt.figure(figsize=(5,5))
     fig.add_subplot()
-    # isi nama method untuk scatter plot, variabel x, dan variabel y
     plt.scatter(x=X,y=Y, s=area, alpha=0.3)
     plt.xlabel('Reviews')
     plt.ylabel('Rating')
@@ -108,7 +102,7 @@ def index():
     figdata_png = base64.b64encode(figfile.getvalue())
     result3 = str(figdata_png)[2:-1]
 
-    ## Buatlah sebuah plot yang menampilkan insight di dalam data 
+    ## Bar Plot Installs
     install = playstore.groupby('Category').agg({
         'Installs' : 'sum'
     }).sort_values('Installs', ascending=False).head().reset_index()
@@ -127,7 +121,6 @@ def index():
     figdata_png = base64.b64encode(figfile.getvalue())
     result4 = str(figdata_png)[2:-1]
 
-    # Tambahkan hasil result plot pada fungsi render_template()
     return render_template('index.html', stats=stats, result=result, result2=result2, result3=result3, result4=result4)
 
 if __name__ == "__main__": 
